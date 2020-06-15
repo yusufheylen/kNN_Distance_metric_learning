@@ -18,31 +18,77 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from scipy.stats import mode
 
+
+def minkowskiDistance(x_a, x_b, p=2):
+    """
+    Calculates the minkowski distance between two vectors
+    
+    Arguments:
+        x_a (np.array): shape [m_features, ] a single vector a
+        x_b (np.array): shape [m_features, ] a single vector b
+        p (int): Sets the Lp distance metric to use:
+            1 - Manhattan
+            2 - Euclidian 
+            inf - Chebyshev
+    
+    Returns:
+        distance (float): Minkowski distance between vectors x_a and x_b
+    """
+    
+    distance = np.sum(np.abs(x_a - x_b)**p)**(1/p)
+    return distance
+
 def euclideanDistance(x_a, x_b):
     """
     Calculates the Euclidean distance between two vectors
     
     Arguments:
-        x_a (array): shape [m_features, ] a single vector a
-        x_b (array): shape [m_features, ] a single vector b
+        x_a (np.array): shape [m_features, ] a single vector a
+        x_b (np.array): shape [m_features, ] a single vector b
     
     Returns:
-        distance (float): distance between vectors x_a and x_b
+        distance (float): Euclidean distance between vectors x_a and x_b
     """
     
+    return minkowskiDistance(x_a, x_b, 2)
+
+def manhattanDistance(x_a, x_b):
+    """
+    Calculates the Manhattan distance between two vectors
     
-    distance = np.sum((x_a - x_b)**2)**(1/2)
+    Arguments:
+        x_a (np.array): shape [m_features, ] a single vector a
+        x_b (np.array): shape [m_features, ] a single vector b
+    
+    Returns:
+        distance (float): Manhattan distance between vectors x_a and x_b
+    """
+    return minkowskiDistance(x_a, x_b, 1)
+
+def chebyshevDistance(x_a, x_b):
+    """
+    Calculates the Chebyshev distance between two vectors
+    
+    Arguments:
+        x_a (np.array): shape [m_features, ] a single vector a
+        x_b (np.array): shape [m_features, ] a single vector b
+    
+    Returns:
+        distance (float): Chebyshev distance between vectors x_a and x_b
+    """
+    
+    distance = np.max( np.abs(x_a - x_b) ) 
     return distance
 
-def calculateDistances(x_test, X_in):
+
+def calculateDistances(x_test, X_in, distanceFunction):
     """
-    TODO: ALLOW FOR CHANGING OF SPEC DISTANCE
     Calculates the distance between a single test example, x_test,
     and a list of examples X_in. 
     
     Args:
-        x_test (array): shape [n_features,] a single test example
-        X_in (array): shape [n_samples, n_features] a list of examples to compare against.
+        x_test (np.array): shape [n_features,] a single test example
+        X_in (np.array): shape [n_samples, n_features] a list of examples to compare against.
     
     Returns:
         distance_list (list of float): The list containing the distances       
@@ -50,7 +96,7 @@ def calculateDistances(x_test, X_in):
     
     distance_list = []
     for example in X_in:
-        distance_list.append(euclideanDistance(example, x_test))
+        distance_list.append(distanceFunction(example, x_test))
     return distance_list
 
 def kNearestIndices(distance_list, k):
@@ -77,12 +123,12 @@ def kNearestNeighbours(k_nearest_indices, X_in, Y_in):
     Arguments:
         k_nearest_indices (array of int): shape [k,] array of the indices 
             corresponding to the k nearest neighbours
-        X_in (array): shape [n_examples, n_features] the example data matrix to sample from
-        Y_in (array): shape [n_examples, ] the label data matrix to sample from
+        X_in (np.array): shape [n_examples, n_features] the example data matrix to sample from
+        Y_in (np.array): shape [n_examples, ] the label data matrix to sample from
     
     Returns:
-        X_k (array): shape [k, n_features] the k nearest examples
-        Y_k (array): shape [k, ] the labels corresponding to the k nearest examples
+        X_k (np.array): shape [k, n_features] the k nearest examples
+        Y_k (np.array): shape [k, ] the labels corresponding to the k nearest examples
     """
     
     X_k = []
@@ -97,43 +143,43 @@ def kNearestNeighbours(k_nearest_indices, X_in, Y_in):
     return X_k, Y_k
 
 
-def predict(x_test, X_in, Y_in, k):
+def predict(x_test, X_in, Y_in, k, distanceFunction):
     """
     Predicts the class of a single test example
     
     Arguments:
-        x_test (array): shape [n_features, ] the test example to classify
-        X_in (array): shape [n_input_examples, n_features] the example data matrix to sample from
-        Y_in (array): shape [n_input_labels, ] the label data matrix to sample from
+        x_test (np.array): shape [n_features, ] the test example to classify
+        X_in (np.array): shape [n_input_examples, n_features] the example data matrix to sample from
+        Y_in (np.array): shape [n_input_labels, ] the label data matrix to sample from
     
     Returns:
         prediction (array): shape [1,] the number corresponding to the class 
     """
     
-    distance_list = calculateDistances(x_test, X_in)
+    distance_list = calculateDistances(x_test, X_in, distanceFunction)
     kNN_indices = kNearestIndices(distance_list, k)
     X_k, Y_k = kNearestNeighbours(kNN_indices, X_in, Y_in)
     prediction =  mode(Y_k, axis=None)[0]
 
     return prediction
 
-def predictBatch(X_t, X_in, Y_in, k):
+def predictBatch(X_t, X_in, Y_in, k, distanceFunction):
     """
     Performs predictions over a batch of test examples
     
     Arguments:
-        X_t (array): shape [n_test_examples, n_features]
-        X_in (array): shape [n_input_examples, n_features]
-        Y_in (array): shape [n_input_labels, ]
+        X_t (np.array): shape [n_test_examples, n_features]
+        X_in (np.array): shape [n_input_examples, n_features]
+        Y_in (np.array): shape [n_input_labels, ]
         k (int): number of nearest neighbours to consider
     
     Returns:
-        predictions (array): shape [n_test_examples,] the array of predictions
+        predictions (np.array): shape [n_test_examples,] the array of predictions
         
     """
     predictions = []
     for x_t_i in X_t:
-        predictions.append(predict(x_t_i, X_in, Y_in, k)[0])
+        predictions.append(predict(x_t_i, X_in, Y_in, k, distanceFunction)[0])
     
     return np.array(predictions)
 
@@ -142,8 +188,8 @@ def accuracy(Y_pred, Y_test):
     Calculates the accuracy of the model 
     
     Arguments:
-        Y_pred (array): shape [n_test_examples,] an array of model predictions
-        Y_test (array): shape [n_test_labels,] an array of test labels to 
+        Y_pred (np.array): shape [n_test_examples,] an array of model predictions
+        Y_test (np.array): shape [n_test_labels,] an array of test labels to 
             evaluate the predictions against
     
     Returns:
@@ -161,21 +207,21 @@ def accuracy(Y_pred, Y_test):
     accuracy = correct/total
     return accuracy
 
-def run(X_train, X_test, Y_train, Y_test, k):
+def run(X_train, X_test, Y_train, Y_test, k, distanceFunction=euclideanDistance):
     """
     Evaluates the model on the test data
     
     Arguments:
-        X_train (array): shape [n_train_examples, n_features]
-        X_test (array): shape [n_test_examples, n_features]
-        Y_train (array): shape [n_train_examples, ]
-        Y_test (array): shape [n_test_examples, ]
+        X_train (np.array): shape [n_train_examples, n_features]
+        X_test (np.array): shape [n_test_examples, n_features]
+        Y_train (np.array): shape [n_train_examples, ]
+        Y_test (np.array): shape [n_test_examples, ]
         k (int): number of nearest neighbours to consider
     
     Returns:
         test_accuracy (float): the final accuracy of your model 
     """
-    Y_pred = predictBatch(X_test, X_train, Y_train, k)
+    Y_pred = predictBatch(X_test, X_train, Y_train, k, distanceFunction)
     test_accuracy = accuracy(Y_pred, Y_test)
 
     return test_accuracy
@@ -187,7 +233,7 @@ def main():
     X_iris = iris.data
     Y_iris = iris.target
     X_iris_train, X_iris_test, Y_iris_train, Y_iris_test = train_test_split(X_iris, Y_iris, test_size = 0.5)
-    print( run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, k=4) ) 
+    print( run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, chebyshevDistance) ) 
     
     
     
