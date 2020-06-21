@@ -309,21 +309,86 @@ def run(X_train, X_test, Y_train, Y_test, k, distanceFunction=euclideanDistance)
     return test_accuracy
 
 def main():
-    from sklearn.datasets import load_iris
+    trials = 20
+    import sklearn.datasets
     
-    iris = load_iris()
+    #Iris trials
+    iris = sklearn.datasets.load_iris()
     X_iris = iris.data
     Y_iris = iris.target
-    X_iris_train, X_iris_test, Y_iris_train, Y_iris_test = train_test_split(X_iris, Y_iris, test_size = 0.5)
-    print( "Manhattan:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, manhattanDistance ) ) 
-    print( "Euclidean:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, euclideanDistance) ) 
-    print( "Chebyshev:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, chebyshevDistance) )
-    print( "Mahalanobis:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, mahalanobisDistance) ) 
-    print( "Optimal:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, optimalDistance) ) 
+    sum_manhat = 0
+    sum_euclid = 0
+    sum_cheby = 0
+    sum_mahala= 0
+    sum_opt = 0
+    for i in range(trials):
 
+        X_iris_train, X_iris_test, Y_iris_train, Y_iris_test = train_test_split(X_iris, Y_iris, test_size = 0.5)
+        
+        sum_manhat += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, manhattanDistance ) 
+        sum_euclid += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, euclideanDistance) 
+        sum_cheby += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, chebyshevDistance)
+        sum_mahala += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, mahalanobisDistance) 
+        sum_opt += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, optimalDistance) 
+    print("----- IRIS -----")
+    print("Manhattan:", sum_manhat/trials )
+    print("Euclidean:", sum_euclid/trials )
+    print("Chebyshev:", sum_cheby/trials )   
+    print("Mahalanobis:", sum_mahala/trials )
+    print("Optimal:", sum_opt/trials )
+    
+    #Wine trials
+    wine = sklearn.datasets.load_wine()
+    X_wine = wine.data
+    Y_wine = wine.target
+    sum_manhat = 0
+    sum_euclid = 0
+    sum_cheby = 0
+    sum_mahala= 0
+    sum_opt = 0
+    for i in range(trials):
 
+        X_wine_train, X_wine_test, Y_wine_train, Y_wine_test = train_test_split(X_wine, Y_wine, test_size = 0.5)
+        
+        sum_manhat += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, manhattanDistance ) 
+        sum_euclid += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, euclideanDistance) 
+        sum_cheby += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, chebyshevDistance)
+        sum_mahala += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, mahalanobisDistance) 
+        sum_opt += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, optimalDistance) 
+    
+    print("\n----- WINE -----")
+    print("Manhattan:", sum_manhat/trials )
+    print("Euclidean:", sum_euclid/trials )
+    print("Chebyshev:", sum_cheby/trials )   
+    print("Mahalanobis:", sum_mahala/trials )
+    print("Optimal:", sum_opt/trials )
     
     
+    #Breast Cancer trials
+    cancer = sklearn.datasets.load_breast_cancer()
+    X_cancer = cancer.data
+    Y_cancer = cancer.target
+    sum_manhat = 0
+    sum_euclid = 0
+    sum_cheby = 0
+    sum_mahala= 0
+    sum_opt = 0
+    for i in range(trials):
+
+        X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test = train_test_split(X_cancer, Y_cancer, test_size = 0.5)
+        
+        sum_manhat += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, manhattanDistance ) 
+        sum_euclid += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, euclideanDistance) 
+        sum_cheby += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, chebyshevDistance)
+        sum_mahala += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, mahalanobisDistance) 
+        sum_opt += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, optimalDistance) 
+    
+    print("\n----- CANCER -----")
+    print("Manhattan:", sum_manhat/trials )
+    print("Euclidean:", sum_euclid/trials )
+    print("Chebyshev:", sum_cheby/trials )   
+    print("Mahalanobis:", sum_mahala/trials )
+    print("Optimal:", sum_opt/trials )
     
 if __name__ == '__main__':
     main()
