@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from scipy.stats import mode
-
+from scipy.spatial import distance as sci_distance
 
 def minkowskiDistance(x_a, x_b, p=2):
     """
@@ -80,23 +80,101 @@ def chebyshevDistance(x_a, x_b):
     distance = np.max( np.abs(x_a - x_b) ) 
     return distance
 
+def mahalanobisDistance(x_a, x_b, iCov):
+    """
+    Calculates the Mahalanobis distance between two vectors
+    
+    Arguments:
+        x_a (np.array): shape [m_features, ] a single vector a
+        x_b (np.array): shape [m_features, ] a single vector b
+        iCov (np.array): shape [m_features, m_features] inverse covarience Matrix of training data
+    
+    Returns:
+        distance (float): Mahalanobis distance between vectors x_a and x_b
+    """
+    return sci_distance.mahalanobis(x_a, x_b, iCov)
+    
+def idealKernelMatrix(Y_in, l=0.5):
+    """
+    Calculates the "ideal kernel" as defined by equation (6) as per Wang et al (2009)
+        
+    Arguments:
+        Y_in (np.array): shape [n_examples, ] the label data matrix to sample from. Encoded as 0->C to denote each class. 
+        l (optional, float): Smoothing parameter. Default = 0.5
+    
+    Returns:
+        KD^- (np.array): shape [n_examples, n_examples] the ideal kernel matrix
+    """
+    #Transfrom shape to that of paper:
+    #Currently Y_in has dimension nx1 where n is the number of examples.
+    #Currently in Y_in each element denotes which class the corresponing examples belongs to
+    #i.e. 1 => belongs to class 2 
+    #Will transform to from of cxn, where c is the number of classes 
+    #Such that each column corresponds to an example and each row corresponds to a binary econding of the class
+    Y_in_KD  = np.zeros(shape=(Y_in.shape[0], (max(Y_in)+1) ))
 
-def calculateDistances(x_test, X_in, distanceFunction):
+    for i in range(Y_in.shape[0]):
+        Y_in_KD[i][Y_in[i]] = 1
+    Y_in_KD = Y_in_KD.T #Swap nxc -> cxn
+    return (Y_in_KD.T)@(Y_in_KD) + l*np.identity(Y_in_KD.shape[1])   
+
+def optimalDistanceMetric(X_in, Y_in):
+    """
+    Calculates the 'optimal' distance metric as per Wang et al (2009) equation (9)
+    
+    Args:
+        X_in (np.array): shape [n_examples, m_features] a list of examples to compare against.
+        Y_in (np.array): shape [n_input_labels, ] the label data matrix to sample from
+
+    Returns:
+        A (np.array): shape [m_features, m_features] the 'optimal' distance matrix
+    """
+    X_in = X_in.T #In the paper they have m and n swapped. i.e. Each row is a feature and each column an example
+    iKD = np.linalg.inv(idealKernelMatrix(Y_in))
+    return np.linalg.inv( X_in@iKD@X_in.T )
+
+def optimalDistance(x_a, x_b, A):
+    """
+    Calculates the 'optimal' distance between two vectors as per Wang et al (2009). 
+    Where d(x,y) is calculated as per Xing et al (2003) equation (2). 
+    
+    Arguments:
+        x_a (np.array): shape [m_features, ] a single vector a
+        x_b (np.array): shape [m_features, ] a single vector b
+        A (np.array): shape [m_features, m_features] the 'optimal' distance matrix
+    
+    Returns:
+        distance (float): 'Optimal' distance between vectors x_a and x_b
+    """
+    return np.sqrt( (x_a - x_b).T@A@(x_a - x_b) )
+
+def calculateDistances(x_test, X_in, Y_in, distanceFunction):
     """
     Calculates the distance between a single test example, x_test,
     and a list of examples X_in. 
     
     Args:
-        x_test (np.array): shape [n_features,] a single test example
-        X_in (np.array): shape [n_samples, n_features] a list of examples to compare against.
-    
+        x_test (np.array): shape [m_features,] a single test example
+        X_in (np.array): shape [n_examples, m_features] a list of examples to compare against.
+        Y_in (np.array): shape [n_input_labels, ] the label data matrix to sample from
+        distanceFunction (function): The distance metric to use 
+
     Returns:
         distance_list (list of float): The list containing the distances       
     """
-    
     distance_list = []
-    for example in X_in:
-        distance_list.append(distanceFunction(example, x_test))
+    if distanceFunction == optimalDistance:
+        A = optimalDistanceMetric(X_in, Y_in)
+        for example in X_in:
+            distance_list.append(distanceFunction(example, x_test, A))
+        
+    elif distanceFunction == mahalanobisDistance:
+        iCov = np.linalg.inv(np.cov(X_in, rowvar=False))
+        for example in X_in:
+            distance_list.append(distanceFunction(example, x_test, iCov))
+    else:
+        for example in X_in:
+            distance_list.append(distanceFunction(example, x_test))
     return distance_list
 
 def kNearestIndices(distance_list, k):
@@ -123,11 +201,11 @@ def kNearestNeighbours(k_nearest_indices, X_in, Y_in):
     Arguments:
         k_nearest_indices (array of int): shape [k,] array of the indices 
             corresponding to the k nearest neighbours
-        X_in (np.array): shape [n_examples, n_features] the example data matrix to sample from
+        X_in (np.array): shape [n_examples, m_features] the example data matrix to sample from
         Y_in (np.array): shape [n_examples, ] the label data matrix to sample from
     
     Returns:
-        X_k (np.array): shape [k, n_features] the k nearest examples
+        X_k (np.array): shape [k, m_features] the k nearest examples
         Y_k (np.array): shape [k, ] the labels corresponding to the k nearest examples
     """
     
@@ -148,15 +226,17 @@ def predict(x_test, X_in, Y_in, k, distanceFunction):
     Predicts the class of a single test example
     
     Arguments:
-        x_test (np.array): shape [n_features, ] the test example to classify
+        x_test (np.array): shape [m_features, ] the test example to classify
         X_in (np.array): shape [n_input_examples, n_features] the example data matrix to sample from
         Y_in (np.array): shape [n_input_labels, ] the label data matrix to sample from
-    
+        k (int): The number of nearest neighbours to consider
+        distanceFunction (function): The distance metric to use 
+        
     Returns:
         prediction (array): shape [1,] the number corresponding to the class 
     """
     
-    distance_list = calculateDistances(x_test, X_in, distanceFunction)
+    distance_list = calculateDistances(x_test, X_in, Y_in, distanceFunction)
     kNN_indices = kNearestIndices(distance_list, k)
     X_k, Y_k = kNearestNeighbours(kNN_indices, X_in, Y_in)
     prediction =  mode(Y_k, axis=None)[0]
@@ -168,11 +248,12 @@ def predictBatch(X_t, X_in, Y_in, k, distanceFunction):
     Performs predictions over a batch of test examples
     
     Arguments:
-        X_t (np.array): shape [n_test_examples, n_features]
-        X_in (np.array): shape [n_input_examples, n_features]
+        X_t (np.array): shape [n_test_examples, m_features]
+        X_in (np.array): shape [n_input_examples, m_features]
         Y_in (np.array): shape [n_input_labels, ]
         k (int): number of nearest neighbours to consider
-    
+        distanceFunction (function): The distance metric to use 
+
     Returns:
         predictions (np.array): shape [n_test_examples,] the array of predictions
         
@@ -217,7 +298,8 @@ def run(X_train, X_test, Y_train, Y_test, k, distanceFunction=euclideanDistance)
         Y_train (np.array): shape [n_train_examples, ]
         Y_test (np.array): shape [n_test_examples, ]
         k (int): number of nearest neighbours to consider
-    
+        distanceFunction (optional, function): The distance metric to use. DEFAULT is euclidean distance
+
     Returns:
         test_accuracy (float): the final accuracy of your model 
     """
@@ -233,7 +315,13 @@ def main():
     X_iris = iris.data
     Y_iris = iris.target
     X_iris_train, X_iris_test, Y_iris_train, Y_iris_test = train_test_split(X_iris, Y_iris, test_size = 0.5)
-    print( run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, chebyshevDistance) ) 
+    print( "Manhattan:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, manhattanDistance ) ) 
+    print( "Euclidean:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, euclideanDistance) ) 
+    print( "Chebyshev:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, chebyshevDistance) )
+    print( "Mahalanobis:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, mahalanobisDistance) ) 
+    print( "Optimal:", run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, optimalDistance) ) 
+
+
     
     
     
