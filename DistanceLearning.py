@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from scipy.stats import mode
 from scipy.spatial import distance as sci_distance
+from sklearn.metrics import confusion_matrix
 
 def minkowskiDistance(x_a, x_b, p=2):
     """
@@ -171,6 +172,7 @@ def calculateDistances(x_test, X_in, Y_in, distanceFunction):
     elif distanceFunction == mahalanobisDistance:
         iCov = np.linalg.inv(np.cov(X_in, rowvar=False))
         for example in X_in:
+            #TODO: SWAPPED EXAMPLE AND X_TEST
             distance_list.append(distanceFunction(example, x_test, iCov))
     else:
         for example in X_in:
@@ -305,90 +307,195 @@ def run(X_train, X_test, Y_train, Y_test, k, distanceFunction=euclideanDistance)
     """
     Y_pred = predictBatch(X_test, X_train, Y_train, k, distanceFunction)
     test_accuracy = accuracy(Y_pred, Y_test)
+    # Example of a confusion matrix in Python
 
-    return test_accuracy
+    return test_accuracy, confusion_matrix(Y_test, Y_pred, normalize='all')
 
 def main():
-    trials = 20
+    trials = 100
     import sklearn.datasets
     
     #Iris trials
     iris = sklearn.datasets.load_iris()
     X_iris = iris.data
     Y_iris = iris.target
+    
     sum_manhat = 0
+    con_man = 0
+    
     sum_euclid = 0
+    con_euclid = 0
+    
     sum_cheby = 0
+    con_cheby = 0
+    
     sum_mahala= 0
+    con_mahala = 0
+    
     sum_opt = 0
+    con_opt = 0
     for i in range(trials):
-
         X_iris_train, X_iris_test, Y_iris_train, Y_iris_test = train_test_split(X_iris, Y_iris, test_size = 0.5)
         
-        sum_manhat += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, manhattanDistance ) 
-        sum_euclid += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, euclideanDistance) 
-        sum_cheby += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, chebyshevDistance)
-        sum_mahala += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, mahalanobisDistance) 
-        sum_opt += run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, optimalDistance) 
+        temp1, temp2  = run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, manhattanDistance ) 
+        sum_manhat += temp1
+        con_man += temp2
+        
+        temp1, temp2  = run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, euclideanDistance) 
+        sum_euclid += temp1
+        con_euclid += temp2
+        
+        temp1, temp2  = run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, chebyshevDistance)
+        sum_cheby += temp1
+        con_cheby += temp2
+
+        temp1, temp2  = run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, mahalanobisDistance) 
+        sum_mahala += temp1
+        con_mahala += temp2
+
+        
+        temp1, temp2  = run(X_iris_train, X_iris_test, Y_iris_train, Y_iris_test, 4, optimalDistance) 
+        sum_opt += temp1
+        con_opt += temp2
+        
+        
     print("----- IRIS -----")
-    print("Manhattan:", sum_manhat/trials )
-    print("Euclidean:", sum_euclid/trials )
-    print("Chebyshev:", sum_cheby/trials )   
-    print("Mahalanobis:", sum_mahala/trials )
-    print("Optimal:", sum_opt/trials )
+    print("Manhattan accuracy:", sum_manhat/trials )
+    print("Manhattan confusion:\n", con_man/trials, end='\n\n' )
+
+    print("Euclidean accuracy:", sum_euclid/trials )
+    print("Euclidean confusion:\n", con_euclid/trials, end='\n\n' )
+
+    print("Chebyshev accuracy:", sum_cheby/trials )   
+    print("Chebyshev confusion:\n", con_cheby/trials, end='\n\n' )
+
+    print("Mahalanobis accuracy:", sum_mahala/trials )
+    print("Mahalanobis confusion:\n", con_mahala/trials, end='\n\n' )
     
+    print("Optimal accuracy:", sum_opt/trials )
+    print("Optimal confusion:\n", con_opt/trials, end='\n\n' )
+
     #Wine trials
     wine = sklearn.datasets.load_wine()
     X_wine = wine.data
     Y_wine = wine.target
+    
+    
     sum_manhat = 0
+    con_man = 0
+    
     sum_euclid = 0
+    con_euclid = 0
+    
     sum_cheby = 0
+    con_cheby = 0
+    
     sum_mahala= 0
+    con_mahala = 0
+    
     sum_opt = 0
+    con_opt = 0
     for i in range(trials):
-
         X_wine_train, X_wine_test, Y_wine_train, Y_wine_test = train_test_split(X_wine, Y_wine, test_size = 0.5)
         
-        sum_manhat += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, manhattanDistance ) 
-        sum_euclid += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, euclideanDistance) 
-        sum_cheby += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, chebyshevDistance)
-        sum_mahala += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, mahalanobisDistance) 
-        sum_opt += run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, optimalDistance) 
+        temp1, temp2  = run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, manhattanDistance ) 
+        sum_manhat += temp1
+        con_man += temp2
+        
+        temp1, temp2  = run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, euclideanDistance) 
+        sum_euclid += temp1
+        con_euclid += temp2
+        
+        temp1, temp2  = run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, chebyshevDistance)
+        sum_cheby += temp1
+        con_cheby += temp2
+
+        temp1, temp2  = run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, mahalanobisDistance) 
+        sum_mahala += temp1
+        con_mahala += temp2
+
+        
+        temp1, temp2  = run(X_wine_train, X_wine_test, Y_wine_train, Y_wine_test, 4, optimalDistance) 
+        sum_opt += temp1
+        con_opt += temp2
+        
+        
+    print("----- WINE -----")
+    print("Manhattan accuracy:", sum_manhat/trials )
+    print("Manhattan confusion:\n", con_man/trials, end='\n\n' )
+
+    print("Euclidean accuracy:", sum_euclid/trials )
+    print("Euclidean confusion:\n", con_euclid/trials, end='\n\n' )
+
+    print("Chebyshev accuracy:", sum_cheby/trials )   
+    print("Chebyshev confusion:\n", con_cheby/trials, end='\n\n' )
+
+    print("Mahalanobis accuracy:", sum_mahala/trials )
+    print("Mahalanobis confusion:\n", con_mahala/trials, end='\n\n' )
     
-    print("\n----- WINE -----")
-    print("Manhattan:", sum_manhat/trials )
-    print("Euclidean:", sum_euclid/trials )
-    print("Chebyshev:", sum_cheby/trials )   
-    print("Mahalanobis:", sum_mahala/trials )
-    print("Optimal:", sum_opt/trials )
+    print("Optimal accuracy:", sum_opt/trials )
+    print("Optimal confusion:\n", con_opt/trials, end='\n\n' )
     
     
     #Breast Cancer trials
     cancer = sklearn.datasets.load_breast_cancer()
     X_cancer = cancer.data
     Y_cancer = cancer.target
+    
     sum_manhat = 0
+    con_man = 0
+    
     sum_euclid = 0
+    con_euclid = 0
+    
     sum_cheby = 0
+    con_cheby = 0
+    
     sum_mahala= 0
+    con_mahala = 0
+    
     sum_opt = 0
+    con_opt = 0
     for i in range(trials):
-
         X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test = train_test_split(X_cancer, Y_cancer, test_size = 0.5)
         
-        sum_manhat += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, manhattanDistance ) 
-        sum_euclid += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, euclideanDistance) 
-        sum_cheby += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, chebyshevDistance)
-        sum_mahala += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, mahalanobisDistance) 
-        sum_opt += run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, optimalDistance) 
+        temp1, temp2  = run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, manhattanDistance ) 
+        sum_manhat += temp1
+        con_man += temp2
+        
+        temp1, temp2  = run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, euclideanDistance) 
+        sum_euclid += temp1
+        con_euclid += temp2
+        
+        temp1, temp2  = run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, chebyshevDistance)
+        sum_cheby += temp1
+        con_cheby += temp2
+
+        temp1, temp2  = run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, mahalanobisDistance) 
+        sum_mahala += temp1
+        con_mahala += temp2
+
+        
+        temp1, temp2  = run(X_cancer_train, X_cancer_test, Y_cancer_train, Y_cancer_test, 4, optimalDistance) 
+        sum_opt += temp1
+        con_opt += temp2
+        
+        
+    print("----- Cancer -----")
+    print("Manhattan accuracy:", sum_manhat/trials )
+    print("Manhattan confusion:\n", con_man/trials, end='\n\n' )
+
+    print("Euclidean accuracy:", sum_euclid/trials )
+    print("Euclidean confusion:\n", con_euclid/trials, end='\n\n' )
+
+    print("Chebyshev accuracy:", sum_cheby/trials )   
+    print("Chebyshev confusion:\n", con_cheby/trials, end='\n\n' )
+
+    print("Mahalanobis accuracy:", sum_mahala/trials )
+    print("Mahalanobis confusion:\n", con_mahala/trials, end='\n\n' )
     
-    print("\n----- CANCER -----")
-    print("Manhattan:", sum_manhat/trials )
-    print("Euclidean:", sum_euclid/trials )
-    print("Chebyshev:", sum_cheby/trials )   
-    print("Mahalanobis:", sum_mahala/trials )
-    print("Optimal:", sum_opt/trials )
+    print("Optimal accuracy:", sum_opt/trials )
+    print("Optimal confusion:\n", con_opt/trials, end='\n\n' )
     
 if __name__ == '__main__':
     main()
